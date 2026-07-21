@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: cincin-app
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
