@@ -1,0 +1,57 @@
+{
+  "cards": [
+    {
+      "id": "e3d5b6c4-872b-4825-83e0-785fa56410bb",
+      "cardNumber": "4000365475204816",
+      "cvv": "221",
+      "expiryMonth": 7,
+      "expiryYear": 2029,
+      "balance": 84.5,
+      "currency": "USD",
+      "isActive": true,
+      "createdAt": "2026-07-21T13:19:38.624Z"
+    },
+    {
+      "id": "133d2060-69c1-476d-a362-9373c88ca9ed",
+      "cardNumber": "4000727308040703",
+      "cvv": "542",
+      "expiryMonth": 7,
+      "expiryYear": 2029,
+      "balance": 100,
+      "currency": "USD",
+      "isActive": true,
+      "createdAt": "2026-07-21T14:21:57.259Z"
+    },
+    {
+      "id": "42f4ae40-a1f3-429a-b756-03693b3d5f13",
+      "telegramId": 8041683307,
+      "cardNumber": "4000311769767322",
+      "cvv": "643",
+      "expiryMonth": 7,
+      "expiryYear": 2029,
+      "balance": 100,
+      "currency": "USD",
+      "isActive": false,
+      "createdAt": "2026-07-21T14:23:39.935Z"
+    }
+  ],
+  "transactions": [
+    {
+      "id": "9a7ed3f9-0531-4f26-9317-8dd60425c57d",
+      "cardId": "e3d5b6c4-872b-4825-83e0-785fa56410bb",
+      "amount": 15.5,
+      "currency": "USD",
+      "merchant": "Steam Store",
+      "status": "COMPLETED",
+      "createdAt": "2026-07-21T13:26:43.748Z"
+    }
+  ],
+  "users": [
+    {
+      "telegramId": "8041683307",
+      "balanceUSD": 0,
+      "createdAt": "2026-07-21T14:46:55.099Z"
+    }
+  ],
+  "deposits": []
+}
