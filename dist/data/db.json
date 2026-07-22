@@ -51,7 +51,45 @@
       "telegramId": "8041683307",
       "balanceUSD": 0,
       "createdAt": "2026-07-21T14:46:55.099Z"
+    },
+    {
+      "telegramId": "6395128687",
+      "balanceUSD": 0,
+      "createdAt": "2026-07-21T17:27:29.279Z"
     }
   ],
-  "deposits": []
+  "deposits": [
+    {
+      "id": "DEP-8041683307-EDEF87",
+      "telegramId": "8041683307",
+      "amountUSD": 10,
+      "amountTON": 6.84,
+      "status": "PENDING",
+      "createdAt": "2026-07-21T17:16:24.124Z"
+    },
+    {
+      "id": "DEP-8041683307-D82047",
+      "telegramId": "8041683307",
+      "amountUSD": 10,
+      "amountTON": 6.84,
+      "status": "PENDING",
+      "createdAt": "2026-07-21T17:16:26.124Z"
+    },
+    {
+      "id": "DEP-6395128687-AE8178",
+      "telegramId": "6395128687",
+      "amountUSD": 10,
+      "amountTON": 6.84,
+      "status": "PENDING",
+      "createdAt": "2026-07-21T17:27:46.878Z"
+    },
+    {
+      "id": "DEP-8041683307-0B65CA",
+      "telegramId": "8041683307",
+      "amountUSD": 10,
+      "amountTON": 6.84,
+      "status": "PENDING",
+      "createdAt": "2026-07-21T17:29:17.550Z"
+    }
+  ]
 }

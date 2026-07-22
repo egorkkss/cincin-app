@@ -24,6 +24,8 @@
     "@types/node": "^26.1.1",
     "@types/node-telegram-bot-api": "^0.64.15",
     "@types/pg": "^8.20.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
     "typescript": "^7.0.2"
   }
 }

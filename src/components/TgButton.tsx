@@ -14,14 +14,12 @@ export const TgButton: React.FC<TgButtonProps> = ({
   ...props 
 }) => {
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    // Вызываем вибрацию в зависимости от типа кнопки
     if (variant === 'success' || variant === 'error') {
       haptic.notification(variant);
-    } else {
+    } else if (variant === 'light' || variant === 'medium' || variant === 'heavy') {
       haptic[variant]();
     }
     
-    // Вызываем оригинальный onClick, если он был передан
     if (onClick) {
       onClick(e);
     }
