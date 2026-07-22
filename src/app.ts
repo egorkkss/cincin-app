@@ -5,7 +5,6 @@ import { readDB, writeDB } from "./utils/db";
 const app = express();
 app.use(express.json());
 
-// Вспомогательная функция поиска/создания пользователя
 const getOrCreateUser = (db: any, telegramId: string | number) => {
   let user = db.users.find((u: any) => String(u.telegramId) === String(telegramId));
   if (!user) {
@@ -19,7 +18,6 @@ const getOrCreateUser = (db: any, telegramId: string | number) => {
   return user;
 };
 
-// 1. Получить профиль и баланс пользователя
 app.get("/api/user/:telegramId", (req, res) => {
   try {
     const { telegramId } = req.params;
@@ -42,10 +40,9 @@ app.get("/api/user/:telegramId", (req, res) => {
   }
 });
 
-// 2. Создание заявки на пополнение через крипту
 app.post("/api/deposits/create", (req, res) => {
   try {
-    const { telegramId, amountUSD, currency } = req.body; // currency: USDT, TON, BTC
+    const { telegramId, amountUSD, currency } = req.body;
 
     if (!telegramId || !amountUSD || amountUSD <= 0) {
       return res.status(400).json({ success: false, message: "Invalid deposit parameters" });
@@ -59,14 +56,13 @@ app.post("/api/deposits/create", (req, res) => {
       telegramId: String(telegramId),
       amountUSD: Number(amountUSD),
       payCurrency: currency || "USDT",
-      status: "PENDING", // PENDING, COMPLETED, FAILED
+      status: "PENDING",
       createdAt: new Date().toISOString()
     };
 
     db.deposits.push(newDeposit);
     writeDB(db);
 
-    // В реальности здесь формируется ссылка/адрес от Crypto API (Cryptomus/CryptoPay)
     res.status(201).json({
       success: true,
       message: "Deposit invoice created",
@@ -74,7 +70,7 @@ app.post("/api/deposits/create", (req, res) => {
         depositId: newDeposit.id,
         amountUSD: newDeposit.amountUSD,
         payCurrency: newDeposit.payCurrency,
-        payAddress: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F", // Фейковый адрес для теста
+        payAddress: "0x71C7656EC7ab88b098defB751B7401B5f6d8976F",
         status: newDeposit.status
       }
     });
@@ -83,7 +79,6 @@ app.post("/api/deposits/create", (req, res) => {
   }
 });
 
-// 3. Эмуляция подтверждения оплаты (Mock Webhook)
 app.post("/api/deposits/mock-pay", (req, res) => {
   try {
     const { depositId } = req.body;
@@ -98,7 +93,6 @@ app.post("/api/deposits/mock-pay", (req, res) => {
       return res.status(400).json({ success: false, message: "Deposit already completed" });
     }
 
-    // Зачисляем баланс пользователю
     deposit.status = "COMPLETED";
     const user = getOrCreateUser(db, deposit.telegramId);
     user.balanceUSD += deposit.amountUSD;
@@ -115,10 +109,9 @@ app.post("/api/deposits/mock-pay", (req, res) => {
   }
 });
 
-// 4. Покупка виртуальной карты с внутреннего баланса аккаунта
 app.post("/api/cards/buy", (req, res) => {
   try {
-    const { telegramId, cardPrice } = req.body; // например, цена выпуска $10
+    const { telegramId, cardPrice } = req.body;
     const price = Number(cardPrice) || 10.00;
 
     const db = readDB();
@@ -131,10 +124,8 @@ app.post("/api/cards/buy", (req, res) => {
       });
     }
 
-    // Списываем баланс
     user.balanceUSD -= price;
 
-    // Выпускаем карту (например, стартовый баланс на карте $5)
     const cardNumber = "4000" + Math.floor(100000000000 + Math.random() * 900000000000).toString();
     const cvv = Math.floor(100 + Math.random() * 900).toString();
 
@@ -145,7 +136,7 @@ app.post("/api/cards/buy", (req, res) => {
       cvv,
       expiryMonth: new Date().getMonth() + 1,
       expiryYear: new Date().getFullYear() + 3,
-      balance: 5.00, // Номинал карты
+      balance: 5.00,
       currency: "USD",
       isActive: true,
       createdAt: new Date().toISOString()
@@ -161,6 +152,46 @@ app.post("/api/cards/buy", (req, res) => {
         card: newCard,
         userRemainingBalance: user.balanceUSD
       }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+app.get("/api/transactions/:telegramId", (req, res) => {
+  try {
+    const { telegramId } = req.params;
+    const db = readDB();
+
+    const userDeposits = (db.deposits || [])
+      .filter((d: any) => String(d.telegramId) === String(telegramId))
+      .map((d: any) => ({
+        id: d.id,
+        type: "DEPOSIT",
+        title: `Пополнение (${d.payCurrency})`,
+        amount: d.amountUSD,
+        status: d.status,
+        date: d.createdAt
+      }));
+
+    const userCards = (db.cards || [])
+      .filter((c: any) => String(c.telegramId) === String(telegramId))
+      .map((c: any) => ({
+        id: c.id,
+        type: "BUY_CARD",
+        title: "Покупка виртуальной карты",
+        amount: -10.00,
+        status: "COMPLETED",
+        date: c.createdAt
+      }));
+
+    const allTransactions = [...userDeposits, ...userCards].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+
+    res.status(200).json({
+      success: true,
+      data: allTransactions
     });
   } catch (error) {
     res.status(500).json({ success: false, message: "Server error" });

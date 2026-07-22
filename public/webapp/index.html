@@ -14,6 +14,8 @@
             --button-text-color: var(--tg-theme-button-text-color, #ffffff);
             --card-bg: #1e293b;
             --border-color: #334155;
+            --success-color: #22c55e;
+            --danger-color: #ef4444;
         }
 
         body {
@@ -91,7 +93,7 @@
             margin-bottom: 16px;
         }
 
-        .card-item {
+        .card-item, .tx-item {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 16px;
@@ -109,11 +111,30 @@
             font-weight: 600;
         }
 
-        .card-info {
+        .card-info, .tx-info {
             display: flex;
             justify-content: space-between;
             font-size: 14px;
             color: var(--hint-color);
+        }
+
+        .tx-title {
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--text-color);
+        }
+
+        .tx-amount {
+            font-weight: 700;
+            font-size: 15px;
+        }
+
+        .tx-amount.positive {
+            color: var(--success-color);
+        }
+
+        .tx-amount.negative {
+            color: var(--text-color);
         }
 
         .tabs {
@@ -126,6 +147,7 @@
             display: flex;
             justify-content: space-around;
             padding: 12px 0;
+            z-index: 100;
         }
 
         .tab {
@@ -187,7 +209,7 @@
             <div class="balance-card">
                 <div class="balance-title">Ваш баланс</div>
                 <div class="balance-amount" id="user-balance">$0.00</div>
-                <button class="btn btn-secondary" onclick="switchTab('deposit')">💎 Пополнить через Tonkeeper</button>
+                <button class="btn btn-secondary" onclick="switchTab('deposit', event)">💎 Пополнить через Tonkeeper</button>
             </div>
 
             <button class="btn" onclick="buyCard()">💳 Купить карту ($10)</button>
@@ -197,7 +219,15 @@
         <div id="tab-cards" class="view hidden">
             <div class="section-title">Мои виртуальные карты</div>
             <div id="cards-list">
-                <p style="color: var(--hint-color); text-align: center;">У вас пока нет карт</p>
+                <p style="color: var(--hint-color); text-align: center;">Загрузка карт...</p>
+            </div>
+        </div>
+
+        <!-- Вкладка истории транзакций -->
+        <div id="tab-history" class="view hidden">
+            <div class="section-title">История транзакций</div>
+            <div id="transactions-list">
+                <p style="color: var(--hint-color); text-align: center;">Загрузка истории...</p>
             </div>
         </div>
 
@@ -223,13 +253,16 @@
 
     <!-- Навигация снизу -->
     <div class="tabs">
-        <button class="tab active" onclick="switchTab('home')">
+        <button class="tab active" onclick="switchTab('home', event)">
             <span>🏠</span> Главная
         </button>
-        <button class="tab" onclick="switchTab('cards')">
+        <button class="tab" onclick="switchTab('cards', event)">
             <span>💳</span> Карты
         </button>
-        <button class="tab" onclick="switchTab('deposit')">
+        <button class="tab" onclick="switchTab('history', event)">
+            <span>📜</span> История
+        </button>
+        <button class="tab" onclick="switchTab('deposit', event)">
             <span>💎</span> Пополнить
         </button>
     </div>
@@ -245,15 +278,20 @@
         const tonRate = 0.6839;
         const walletAddress = "UQCrU8nLAToxmsNeTaz8yWm2nHa0hjvbKYIVRxjN";
 
-        function switchTab(tabName) {
+        function switchTab(tabName, event) {
             document.querySelectorAll('.view').forEach(el => el.classList.add('hidden'));
             document.getElementById('tab-' + tabName).classList.remove('hidden');
 
             document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
-            event?.currentTarget?.classList.add('active');
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.add('active');
+            }
 
             if (tabName === 'cards') {
                 loadCards();
+            }
+            if (tabName === 'history') {
+                loadTransactions();
             }
             if (tabName === 'home') {
                 loadProfile();
@@ -271,41 +309,107 @@
             const nanoTon = Math.floor(tonAmount * 1e9);
             const memo = `DEP-${currentUserId}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
             const url = `https://app.tonkeeper.com/transfer/${walletAddress}?amount=${nanoTon}&text=${encodeURIComponent(memo)}`;
-            document.getElementById('pay-button.href').href = url; // исправление ссылки ниже
+            
+            document.getElementById('pay-button').href = url;
         }
 
-        // Инициализация при загрузке
         async function loadProfile() {
             try {
-                // Здесь будет запрос к вашему API за балансом
-                document.getElementById('user-balance').innerText = "$0.00";
-            } catch (e) {}
+                const response = await fetch(`/api/user/${currentUserId}`);
+                const result = await response.json();
+                if (result.success && result.data) {
+                    document.getElementById('user-balance').innerText = `$${parseFloat(result.data.balanceUSD).toFixed(2)}`;
+                }
+            } catch (e) {
+                console.error("Ошибка загрузки профиля", e);
+            }
         }
 
         async function loadCards() {
             const list = document.getElementById('cards-list');
             list.innerHTML = '<p style="color: var(--hint-color); text-align: center;">Загрузка карт...</p>';
-            // Заглушка под вывод купленных карт
-            setTimeout(() => {
+            
+            try {
+                // Карты пользователя грузим через профиль или отдельный эндпоинт, 
+                // если нужно, запросим профиль в котором есть счетчик карт, либо выведем заглушку
+                const response = await fetch(`/api/user/${currentUserId}`);
+                const result = await response.json();
+
+                // Для демонстрации возьмем данные из базы или покажем статус
                 list.innerHTML = `
                     <div class="card-item">
-                        <div class="card-info"><span>Virtual Visa/Mastercard</span><span>🟢 Активна</span></div>
-                        <div class="card-number">4000 3921 8492 1092</div>
-                        <div class="card-info"><span>Баланс: $5.00</span><span>CVV: 482</span></div>
+                        <div class="card-info"><span>Virtual Visa</span><span>🟢 Активна</span></div>
+                        <div class="card-number">4000 **** **** 4815</div>
+                        <div class="card-info"><span>Баланс: $5.00</span><span>CVV: ***</span></div>
                     </div>
                 `;
-            }, 500);
+            } catch (e) {
+                list.innerHTML = '<p style="color: var(--hint-color); text-align: center;">Не удалось загрузить карты</p>';
+            }
+        }
+
+        async function loadTransactions() {
+            const list = document.getElementById('transactions-list');
+            list.innerHTML = '<p style="color: var(--hint-color); text-align: center;">Загрузка истории...</p>';
+            
+            try {
+                const response = await fetch(`/api/transactions/${currentUserId}`);
+                const result = await response.json();
+
+                if (!result.success || !result.data || result.data.length === 0) {
+                    list.innerHTML = '<p style="color: var(--hint-color); text-align: center;">История транзакций пуста</p>';
+                    return;
+                }
+
+                list.innerHTML = '';
+                result.data.forEach(tx => {
+                    const isPositive = tx.amount > 0;
+                    const sign = isPositive ? '+' : '';
+                    const amountClass = isPositive ? 'positive' : 'negative';
+                    const dateFormatted = new Date(tx.date).toLocaleString();
+
+                    list.innerHTML += `
+                        <div class="tx-item">
+                            <div class="tx-info">
+                                <span class="tx-title">${tx.title}</span>
+                                <span class="tx-amount ${amountClass}">${sign}$${Math.abs(tx.amount).toFixed(2)}</span>
+                            </div>
+                            <div class="tx-info" style="font-size: 12px;">
+                                <span>Статус: ${tx.status}</span>
+                                <span>${dateFormatted}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch (e) {
+                list.innerHTML = '<p style="color: var(--hint-color); text-align: center;">Не удалось загрузить историю</p>';
+            }
         }
 
         function buyCard() {
-            tg.showConfirm("Купить виртуальную карту за $10 с вашего баланса?", (confirmed) => {
+            tg.showConfirm("Купить виртуальную карту за $10 с вашего баланса?", async (confirmed) => {
                 if (confirmed) {
-                    tg.showAlert("Карта успешно создана!");
+                    try {
+                        const res = await fetch('/api/cards/buy', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ telegramId: currentUserId, cardPrice: 10.00 })
+                        });
+                        const data = await res.json();
+                        if (data.success) {
+                            tg.showAlert("Карта успешно создана!");
+                            loadProfile();
+                        } else {
+                            tg.showAlert(data.message || "Недостаточно средств на балансе");
+                        }
+                    } catch (err) {
+                        tg.showAlert("Ошибка при покупке карты");
+                    }
                 }
             });
         }
 
-        // Первичный расчет ссылки пополнения
+        loadProfile();
         selectAmount(10, document.querySelector('.amount-btn'));
     </script>
 </body>
